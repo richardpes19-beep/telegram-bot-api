@@ -16,10 +16,13 @@ const apiId = Number(process.env.API_ID);
 const apiHash = process.env.API_HASH;
 
 
+// =======================================================
 // COLE SUA STRING SESSION AQUI
+// =======================================================
 const stringSession = new StringSession(
-"1AQAOMTQ5LjE1NC4xNzUuNTQBu5H+8CJ+MJN3o51ui9I1Aw2ReL8jaNQQWi9zk/nxMX7OmEEiLkbyCtjDdnrey/paeX2yqD3D3gzPbDIltM3BrF4NkYqSPfnY0HYi6x7+14fSfJ9kWz/m5dOfV9R4eLWti/HXaEwifSkbfMONr2YuI1rQFG/3kbU/8sEO7d1JU18eqfKL/SZ6DKVZnX0hTk8I8o+png7GqOCj2FPbjvG95yW1Bf5pxFDrwEevWkxbEWl1+JMDotdmNwH6ICHtrQTotoxgDo9RIpH+Ea6JPiWhVqqyjMf8x07pnqZihhfhGmTjemLrPSkqaIQTcO35IkhupJDHP+fOAjmfyoNChht85aY="
+    "1AQAOMTQ5LjE1NC4xNzUuNTQBu5H+8CJ+MJN3o51ui9I1Aw2ReL8jaNQQWi9zk/nxMX7OmEEiLkbyCtjDdnrey/paeX2yqD3D3gzPbDIltM3BrF4NkYqSPfnY0HYi6x7+14fSfJ9kWz/m5dOfV9R4eLWti/HXaEwifSkbfMONr2YuI1rQFG/3kbU/8sEO7d1JU18eqfKL/SZ6DKVZnX0hTk8I8o+png7GqOCj2FPbjvG95yW1Bf5pxFDrwEevWkxbEWl1+JMDotdmNwH6ICHtrQTotoxgDo9RIpH+Ea6JPiWhVqqyjMf8x07pnqZihhfhGmTjemLrPSkqaIQTcO35IkhupJDHP+fOAjmfyoNChht85aY="
 );
+// =======================================================
 
 
 const client = new TelegramClient(
@@ -43,10 +46,14 @@ function esperar(ms){
 
 async function gerarPix(valor){
 
+    console.log("GERANDO PIX:", valor);
+
 
     await client.sendMessage(bot,{
         message:"/start"
     });
+
+    console.log("START enviado");
 
 
     await esperar(3000);
@@ -54,13 +61,14 @@ async function gerarPix(valor){
 
 
     const mensagens = await client.getMessages(bot,{
-        limit:5
+        limit:10
     });
 
 
 
     let mensagemMenu;
     let botaoDepositar;
+
 
 
     for(const msg of mensagens){
@@ -72,10 +80,15 @@ async function gerarPix(valor){
         mensagemMenu = msg;
 
 
+
         for(const row of msg.replyMarkup.rows){
 
 
             for(const button of row.buttons){
+
+
+                console.log("BOTAO ENCONTRADO:", button.text);
+
 
 
                 if(button.text.includes("DEPOSITAR")){
@@ -94,6 +107,9 @@ async function gerarPix(valor){
 
     if(!botaoDepositar){
 
+        console.log("NAO ACHOU BOTAO DEPOSITAR");
+
+
         return {
             sucesso:false,
             erro:"Botão 📥 DEPOSITAR não encontrado"
@@ -101,6 +117,13 @@ async function gerarPix(valor){
 
     }
 
+
+
+    console.log("CLICANDO NO DEPOSITAR");
+
+
+    // guarda o id da mensagem do menu ANTES do clique, pra comparar depois
+    const idAntesDoClique = mensagemMenu.id;
 
 
     await client.invoke(
@@ -117,27 +140,88 @@ async function gerarPix(valor){
 
 
 
-    await esperar(3000);
+    console.log("DEPOSITAR CLICADO");
 
 
 
-    await client.sendMessage(bot,{
-        message:String(valor)
-    });
+    // espera mais tempo pro bot mandar a pergunta do valor
+    await esperar(6000);
 
 
 
-    await esperar(5000);
+    console.log("BUSCANDO MENSAGEM QUE PEDE O VALOR");
 
 
-
-    const novasMensagens = await client.getMessages(bot,{
+    const mensagensPosClique = await client.getMessages(bot,{
         limit:10
     });
 
 
+    // pega a mensagem mais recente que apareceu DEPOIS do clique
+    let mensagemPedeValor;
+
+    for(const msg of mensagensPosClique){
+
+        console.log("MSG POS CLIQUE:", msg.id, "-", msg.message?.substring(0,150));
+
+        if(msg.id > idAntesDoClique){
+
+            if(!mensagemPedeValor){
+                mensagemPedeValor = msg;
+            }
+
+        }
+
+    }
+
+
+    if(!mensagemPedeValor){
+
+        console.log("NAO ACHOU MENSAGEM PEDINDO O VALOR");
+
+        return {
+            sucesso:false,
+            erro:"Não encontrou a mensagem que pede o valor do depósito"
+        };
+
+    }
+
+
+
+    console.log("MANDANDO VALOR:", String(valor), "EM REPLY A:", mensagemPedeValor.id);
+
+
+
+    await client.sendMessage(bot,{
+        message: String(valor),
+        replyTo: mensagemPedeValor.id   // <-- ESSENCIAL: responde direto na mensagem que pediu o valor
+    });
+
+
+
+    console.log("VALOR ENVIADO");
+
+
+
+    await esperar(10000);
+
+
+
+    const novasMensagens = await client.getMessages(bot,{
+        limit:20
+    });
+
+
+
+    console.log("MENSAGENS RECEBIDAS:", novasMensagens.length);
+
+
 
     for(const msg of novasMensagens){
+
+
+        console.log("MSG:", msg.message?.substring(0,150));
+
 
 
         if(
@@ -149,6 +233,10 @@ async function gerarPix(valor){
             const pix = msg.message
             .split("PIX Copia e Cola:")[1]
             .trim();
+
+
+
+            console.log("PIX ENCONTRADO");
 
 
 
@@ -168,6 +256,9 @@ async function gerarPix(valor){
 
 
 
+    console.log("NAO ACHOU PIX");
+
+
     return {
 
         sucesso:false,
@@ -175,7 +266,6 @@ async function gerarPix(valor){
         erro:"PIX não encontrado"
 
     };
-
 
 }
 
@@ -195,6 +285,7 @@ async function gerarPix(valor){
     bot = await client.getEntity(
         "VortexBank_bot"
     );
+
 
 
     console.log(
