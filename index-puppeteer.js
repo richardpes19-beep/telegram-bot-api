@@ -31,7 +31,6 @@ async function iniciarNavegador() {
             "--disable-setuid-sandbox",
             "--disable-dev-shm-usage", // usa /tmp em vez de /dev/shm (containers tem pouco shm)
             "--disable-gpu",
-            "--single-process", // reduz uso de memoria (evita crash em containers pequenos)
             "--no-zygote"
         ]
     });
