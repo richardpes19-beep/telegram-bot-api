@@ -95,25 +95,34 @@ async function enviarMensagem(texto) {
 
     await esperar(2000);
 
-    // insere o texto de UMA VEZ SO (como se fosse colar), em vez de digitar letra por letra.
-    // isso evita que o re-render do autocomplete do Telegram corte o texto no meio.
-    await page.evaluate((seletor, valorTexto) => {
-
-        const campo = document.querySelector(seletor);
-        campo.focus();
-        document.execCommand("insertText", false, valorTexto);
-
-    }, seletorEncontrado, texto);
-
-    await esperar(2000);
-
-    // dispara o evento de input manualmente, garantindo que o Telegram registrou o texto
+    // limpa o RASCUNHO que o Telegram salva automaticamente no campo
+    // (seleciona so o conteudo do campo, nao a pagina inteira, e apaga)
     await page.evaluate((seletor) => {
 
         const campo = document.querySelector(seletor);
-        campo.dispatchEvent(new Event("input", { bubbles: true }));
+        campo.focus();
+
+        const range = document.createRange();
+        range.selectNodeContents(campo);
+
+        const selecao = window.getSelection();
+        selecao.removeAllRanges();
+        selecao.addRange(range);
+
+        document.execCommand("delete", false, null);
 
     }, seletorEncontrado);
+
+    await esperar(1000);
+
+    // insere o texto de UMA VEZ SO (como se fosse colar), em vez de digitar letra por letra.
+    // isso evita que o re-render do autocomplete do Telegram corte o texto no meio.
+    // agora que o campo esta limpo (sem rascunho), digita de verdade, tecla por tecla
+    await page.click(seletorEncontrado);
+
+    await esperar(1000);
+
+    await page.type(seletorEncontrado, texto, { delay: 200 });
 
     await esperar(2000);
 
