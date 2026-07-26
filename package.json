@@ -1,0 +1,19 @@
+{
+  "name": "telegram-bot-puppeteer",
+  "version": "1.0.0",
+  "type": "commonjs",
+  "description": "",
+  "main": "index-puppeteer.js",
+  "scripts": {
+    "start": "node index-puppeteer.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "puppeteer": "^23.0.0"
+  }
+}

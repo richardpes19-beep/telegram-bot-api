@@ -25,7 +25,7 @@ async function iniciarNavegador() {
 
     browser = await puppeteer.launch({
         headless: true, // ja logado, nao precisa ver a tela
-        userDataDir: "./sessao_telegram", // mesma pasta gerada no login.js
+        userDataDir: process.env.SESSAO_PATH || "./sessao_telegram", // pasta gerada no login.js
         args: ["--no-sandbox", "--disable-setuid-sandbox"]
     });
 
