@@ -38,8 +38,15 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
+# fixa onde o chromium do puppeteer fica salvo, pra nao depender de HOME variar
+ENV PUPPETEER_CACHE_DIR=/app/.cache/puppeteer
+
 COPY package*.json ./
 RUN npm install
+
+# VERIFICACAO: confirma que o chromium foi baixado de verdade.
+# Se isso falhar aqui, o build para com erro claro, em vez de falhar silenciosamente no runtime.
+RUN node -e "const p = require('puppeteer'); const path = p.executablePath(); console.log('Chromium esperado em:', path); require('fs').accessSync(path); console.log('OK: Chromium encontrado.');"
 
 COPY . .
 

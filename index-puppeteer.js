@@ -23,15 +23,29 @@ async function iniciarNavegador() {
 
     console.log("Abrindo navegador com sessao salva...");
 
+    console.log("Chromium sendo usado em:", puppeteer.executablePath());
+
     browser = await puppeteer.launch({
         headless: true, // ja logado, nao precisa ver a tela
+        executablePath: puppeteer.executablePath(),
         userDataDir: process.env.SESSAO_PATH || "./sessao_telegram", // pasta gerada no login.js
+        dumpio: true, // mostra o log real do Chrome no console (pra achar o motivo do crash)
         args: [
             "--no-sandbox",
             "--disable-setuid-sandbox",
             "--disable-dev-shm-usage", // usa /tmp em vez de /dev/shm (containers tem pouco shm)
             "--disable-gpu",
-            "--no-zygote"
+            "--no-zygote",
+            "--disable-extensions",
+            "--disable-background-networking",
+            "--disable-default-apps",
+            "--disable-sync",
+            "--disable-translate",
+            "--metrics-recording-only",
+            "--mute-audio",
+            "--no-first-run",
+            "--disable-hang-monitor",
+            "--js-flags=--max-old-space-size=256" // limita memoria do V8 dentro do Chrome
         ]
     });
 
