@@ -26,7 +26,14 @@ async function iniciarNavegador() {
     browser = await puppeteer.launch({
         headless: true, // ja logado, nao precisa ver a tela
         userDataDir: process.env.SESSAO_PATH || "./sessao_telegram", // pasta gerada no login.js
-        args: ["--no-sandbox", "--disable-setuid-sandbox"]
+        args: [
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--disable-dev-shm-usage", // usa /tmp em vez de /dev/shm (containers tem pouco shm)
+            "--disable-gpu",
+            "--single-process", // reduz uso de memoria (evita crash em containers pequenos)
+            "--no-zygote"
+        ]
     });
 
     page = await browser.newPage();
