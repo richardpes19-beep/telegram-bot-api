@@ -26,7 +26,7 @@ async function iniciarNavegador() {
     console.log("Chromium sendo usado em:", puppeteer.executablePath());
 
     browser = await puppeteer.launch({
-        headless: "shell", // modo headless antigo/leve - mais estavel em containers restritos
+        headless: false, // visivel - pra voce conseguir ver e escanear o QR code do Telegram
         executablePath: puppeteer.executablePath(),
         userDataDir: process.env.SESSAO_PATH || "./sessao_telegram", // pasta gerada no login.js
         dumpio: true, // mostra o log real do Chrome no console (pra achar o motivo do crash)
