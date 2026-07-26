@@ -83,25 +83,44 @@ async function clicarBotaoDepositar() {
 
     console.log("Procurando botao 📥 DEPOSITAR...");
 
-    // procura o botao com o emoji e texto especificos
+    // busca generica: percorre todos os elementos "folha" (sem filhos) da pagina
+    // procurando o texto do botao, e clica no elemento clicavel mais proximo
     const botaoEncontrado = await page.evaluate(() => {
 
-        const botoes = Array.from(document.querySelectorAll("button, .inline-button, .reply-markup-row button"));
+        const todosElementos = Array.from(document.querySelectorAll("*"));
 
-        for (const botao of botoes) {
+        let alvo = null;
 
-            const texto = botao.innerText || "";
+        for (const el of todosElementos) {
 
-            if (texto.includes("📥") && texto.includes("DEPOSITAR")) {
+            // elemento "folha": nao tem elementos filhos, so texto
+            if (el.children.length === 0) {
 
-                botao.click();
-                return true;
+                const texto = (el.textContent || "").trim();
+
+                if (texto.includes("DEPOSITAR")) {
+
+                    alvo = el;
+                    break;
+
+                }
 
             }
 
         }
 
-        return false;
+        if (!alvo) return false;
+
+        // tenta subir ate achar um ancestral que pareça clicavel (botao/linha do teclado)
+        const clicavel =
+            alvo.closest('[class*="reply-markup"]') ||
+            alvo.closest('button') ||
+            alvo.closest('[role="button"]') ||
+            alvo;
+
+        clicavel.click();
+
+        return true;
 
     });
 
