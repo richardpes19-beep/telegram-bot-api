@@ -64,18 +64,40 @@ async function iniciarNavegador() {
 
 async function enviarMensagem(texto) {
 
-    // acha a caixa de texto do chat e digita
-    const seletorCaixaTexto = 'div[contenteditable="true"][data-peer-id]';
+    console.log("Tentando enviar mensagem:", texto);
 
-    await page.waitForSelector(seletorCaixaTexto, { timeout: 20000 });
+    // tenta varios seletores possiveis pra caixa de texto do Telegram Web
+    const seletoresPossiveis = [
+        'div[contenteditable="true"][data-peer-id]',
+        'div.input-message-input',
+        'div[contenteditable="true"]'
+    ];
 
-    await page.click(seletorCaixaTexto);
+    let seletorEncontrado = null;
 
-    await page.type(seletorCaixaTexto, texto, { delay: 50 });
+    for (const seletor of seletoresPossiveis) {
+
+        const existe = await page.$(seletor);
+
+        if (existe) {
+            seletorEncontrado = seletor;
+            console.log("Caixa de texto encontrada com seletor:", seletor);
+            break;
+        }
+
+    }
+
+    if (!seletorEncontrado) {
+        throw new Error("Nao encontrou a caixa de texto do chat na tela");
+    }
+
+    await page.click(seletorEncontrado);
+
+    await page.type(seletorEncontrado, texto, { delay: 50 });
 
     await page.keyboard.press("Enter");
 
-    console.log("Mensagem enviada:", texto);
+    console.log("Mensagem enviada com sucesso:", texto);
 }
 
 
@@ -149,20 +171,29 @@ async function pegarUltimasMensagens(quantidade = 10) {
 
 async function gerarPix(valor) {
 
-    console.log("GERANDO PIX:", valor);
+    console.log("========================================");
+    console.log("GERANDO PIX - VALOR:", valor);
+    console.log("========================================");
 
+    console.log("PASSO 1: enviando /start...");
     await enviarMensagem("/start");
+    console.log("PASSO 1 OK: /start enviado.");
 
-    await esperar(3000);
+    console.log("Esperando 5 segundos pro menu aparecer...");
+    await esperar(5000);
 
+    console.log("PASSO 2: clicando no botao DEPOSITAR...");
     await clicarBotaoDepositar();
+    console.log("PASSO 2 OK: botao clicado.");
 
+    console.log("Esperando 6 segundos pro bot pedir o valor...");
     await esperar(6000);
 
-    console.log("MANDANDO VALOR:", valor);
-
+    console.log("PASSO 3: enviando o valor:", valor);
     await enviarMensagem(String(valor));
+    console.log("PASSO 3 OK: valor enviado.");
 
+    console.log("Esperando 10 segundos pelo PIX...");
     await esperar(10000);
 
     const mensagens = await pegarUltimasMensagens(20);

@@ -1,5 +1,3 @@
-2026/07/26-15:35:33.843 35f8 Creating DB C:\Users\PC\Downloads\telegram-bot-api\sessao_telegram\Default\Local Storage\leveldb since it was missing.
-2026/07/26-15:35:34.018 35f8 Reusing MANIFEST C:\Users\PC\Downloads\telegram-bot-api\sessao_telegram\Default\Local Storage\leveldb/MANIFEST-000001
-2026/07/26-18:08:34.476 7c0 Level-0 table #5: started
-2026/07/26-18:08:34.485 7c0 Level-0 table #5: 19693 bytes OK
-2026/07/26-18:08:34.493 7c0 Delete type=0 #3
+2026/07/26-18:39:27.830 54bc Reusing MANIFEST C:\Users\PC\Downloads\telegram-bot-api\sessao_telegram\Default\Local Storage\leveldb/MANIFEST-000001
+2026/07/26-18:39:27.838 54bc Recovering log #4
+2026/07/26-18:39:27.840 54bc Reusing old log C:\Users\PC\Downloads\telegram-bot-api\sessao_telegram\Default\Local Storage\leveldb/000004.log 
