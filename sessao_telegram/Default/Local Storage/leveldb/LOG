@@ -1,3 +1,6 @@
-2026/07/26-18:39:27.830 54bc Reusing MANIFEST C:\Users\PC\Downloads\telegram-bot-api\sessao_telegram\Default\Local Storage\leveldb/MANIFEST-000001
-2026/07/26-18:39:27.838 54bc Recovering log #4
-2026/07/26-18:39:27.840 54bc Reusing old log C:\Users\PC\Downloads\telegram-bot-api\sessao_telegram\Default\Local Storage\leveldb/000004.log 
+2026/07/26-19:08:08.792 1d80 Reusing MANIFEST C:\Users\PC\Downloads\telegram-bot-api\sessao_telegram\Default\Local Storage\leveldb/MANIFEST-000001
+2026/07/26-19:08:08.799 1d80 Recovering log #4
+2026/07/26-19:08:08.801 1d80 Reusing old log C:\Users\PC\Downloads\telegram-bot-api\sessao_telegram\Default\Local Storage\leveldb/000004.log 
+2026/07/26-19:09:08.815 3674 Level-0 table #8: started
+2026/07/26-19:09:08.825 3674 Level-0 table #8: 28072 bytes OK
+2026/07/26-19:09:08.833 3674 Delete type=0 #4

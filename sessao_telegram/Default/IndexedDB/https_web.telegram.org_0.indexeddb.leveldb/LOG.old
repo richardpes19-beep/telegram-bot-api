@@ -1,33 +1,3 @@
-2026/07/26-15:35:35.705 4054 Creating DB C:\Users\PC\Downloads\telegram-bot-api\sessao_telegram\Default\IndexedDB\https_web.telegram.org_0.indexeddb.leveldb since it was missing.
-2026/07/26-15:35:35.738 4054 Reusing MANIFEST C:\Users\PC\Downloads\telegram-bot-api\sessao_telegram\Default\IndexedDB\https_web.telegram.org_0.indexeddb.leveldb/MANIFEST-000001
-2026/07/26-15:35:36.327 4054 Level-0 table #5: started
-2026/07/26-15:35:36.333 4054 Level-0 table #5: 22628 bytes OK
-2026/07/26-15:35:36.343 4054 Delete type=0 #3
-2026/07/26-15:35:36.343 4054 Manual compaction at level-0 from '\x00\x03\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x04\x00\x00\x00' @ 0 : 0; will stop at (end)
-2026/07/26-16:11:24.066 4b40 Level-0 table #7: started
-2026/07/26-16:11:24.103 4b40 Level-0 table #7: 1551357 bytes OK
-2026/07/26-16:11:24.111 4b40 Delete type=0 #4
-2026/07/26-16:12:47.831 4dc0 Compacting 1@1 + 1@2 files
-2026/07/26-16:12:47.856 4dc0 Generated table #8@1: 1432 keys, 365047 bytes
-2026/07/26-16:12:47.856 4dc0 Compacted 1@1 + 1@2 files => 365047 bytes
-2026/07/26-16:12:47.863 4dc0 compacted to: files[ 0 0 1 0 0 0 0 ]
-2026/07/26-16:12:47.863 4dc0 Delete type=2 #5
-2026/07/26-16:12:47.863 4dc0 Delete type=2 #7
-2026/07/26-17:16:59.761 4b40 Level-0 table #10: started
-2026/07/26-17:16:59.838 4b40 Level-0 table #10: 1471349 bytes OK
-2026/07/26-17:16:59.846 4b40 Delete type=0 #6
-2026/07/26-17:18:44.113 25d4 Compacting 1@1 + 1@2 files
-2026/07/26-17:18:44.140 25d4 Generated table #11@1: 1434 keys, 344061 bytes
-2026/07/26-17:18:44.140 25d4 Compacted 1@1 + 1@2 files => 344061 bytes
-2026/07/26-17:18:44.147 25d4 compacted to: files[ 0 0 1 0 0 0 0 ]
-2026/07/26-17:18:44.147 25d4 Delete type=2 #8
-2026/07/26-17:18:44.147 25d4 Delete type=2 #10
-2026/07/26-18:11:25.831 25d4 Level-0 table #13: started
-2026/07/26-18:11:25.865 25d4 Level-0 table #13: 1564946 bytes OK
-2026/07/26-18:11:25.872 25d4 Delete type=0 #9
-2026/07/26-18:11:37.702 4054 Compacting 1@1 + 1@2 files
-2026/07/26-18:11:37.729 4054 Generated table #14@1: 1432 keys, 358972 bytes
-2026/07/26-18:11:37.729 4054 Compacted 1@1 + 1@2 files => 358972 bytes
-2026/07/26-18:11:37.735 4054 compacted to: files[ 0 0 1 0 0 0 0 ]
-2026/07/26-18:11:37.736 4054 Delete type=2 #11
-2026/07/26-18:11:37.736 4054 Delete type=2 #13
+2026/07/26-19:06:14.069 5c30 Reusing MANIFEST C:\Users\PC\Downloads\telegram-bot-api\sessao_telegram\Default\IndexedDB\https_web.telegram.org_0.indexeddb.leveldb/MANIFEST-000001
+2026/07/26-19:06:14.070 5c30 Recovering log #16
+2026/07/26-19:06:14.072 5c30 Reusing old log C:\Users\PC\Downloads\telegram-bot-api\sessao_telegram\Default\IndexedDB\https_web.telegram.org_0.indexeddb.leveldb/000016.log 

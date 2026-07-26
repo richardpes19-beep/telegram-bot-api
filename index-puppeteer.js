@@ -93,9 +93,33 @@ async function enviarMensagem(texto) {
 
     await page.click(seletorEncontrado);
 
-    await page.type(seletorEncontrado, texto, { delay: 50 });
+    await esperar(2000);
+
+    // insere o texto de UMA VEZ SO (como se fosse colar), em vez de digitar letra por letra.
+    // isso evita que o re-render do autocomplete do Telegram corte o texto no meio.
+    await page.evaluate((seletor, valorTexto) => {
+
+        const campo = document.querySelector(seletor);
+        campo.focus();
+        document.execCommand("insertText", false, valorTexto);
+
+    }, seletorEncontrado, texto);
+
+    await esperar(2000);
+
+    // dispara o evento de input manualmente, garantindo que o Telegram registrou o texto
+    await page.evaluate((seletor) => {
+
+        const campo = document.querySelector(seletor);
+        campo.dispatchEvent(new Event("input", { bubbles: true }));
+
+    }, seletorEncontrado);
+
+    await esperar(2000);
 
     await page.keyboard.press("Enter");
+
+    await esperar(2000);
 
     console.log("Mensagem enviada com sucesso:", texto);
 }
@@ -175,12 +199,21 @@ async function gerarPix(valor) {
     console.log("GERANDO PIX - VALOR:", valor);
     console.log("========================================");
 
+    // pasta onde os prints de cada etapa vao ser salvos
+    const fs = require("fs");
+    if (!fs.existsSync("./prints")) fs.mkdirSync("./prints");
+
+    console.log("Esperando 3 segundos pra tela estabilizar...");
+    await esperar(3000);
+    await page.screenshot({ path: "./prints/1-antes-do-start.png" });
+
     console.log("PASSO 1: enviando /start...");
     await enviarMensagem("/start");
     console.log("PASSO 1 OK: /start enviado.");
 
-    console.log("Esperando 5 segundos pro menu aparecer...");
-    await esperar(5000);
+    console.log("Esperando 6 segundos pro menu aparecer...");
+    await esperar(6000);
+    await page.screenshot({ path: "./prints/2-depois-do-start.png" });
 
     console.log("PASSO 2: clicando no botao DEPOSITAR...");
     await clicarBotaoDepositar();
@@ -188,6 +221,7 @@ async function gerarPix(valor) {
 
     console.log("Esperando 6 segundos pro bot pedir o valor...");
     await esperar(6000);
+    await page.screenshot({ path: "./prints/3-depois-do-clique.png" });
 
     console.log("PASSO 3: enviando o valor:", valor);
     await enviarMensagem(String(valor));
@@ -195,6 +229,7 @@ async function gerarPix(valor) {
 
     console.log("Esperando 10 segundos pelo PIX...");
     await esperar(10000);
+    await page.screenshot({ path: "./prints/4-depois-do-valor.png" });
 
     const mensagens = await pegarUltimasMensagens(20);
 
