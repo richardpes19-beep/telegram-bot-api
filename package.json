@@ -1,19 +1,14 @@
 {
-  "name": "telegram-bot-puppeteer",
+  "name": "vortex-gramjs-deposito",
   "version": "1.0.0",
-  "type": "commonjs",
-  "description": "",
-  "main": "index-puppeteer.js",
+  "private": true,
+  "main": "deposito.js",
   "scripts": {
-    "start": "node index-puppeteer.js"
+    "start": "node deposito.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
-    "cors": "^2.8.6",
-    "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "puppeteer": "^23.11.1"
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "telegram": "^2.26.22"
   }
 }
