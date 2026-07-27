@@ -84,7 +84,7 @@ async def main():
 
     await asyncio.sleep(4)
 
-    valor_num = 1200
+    valor_num = 1000
 
     if valor_num == int(valor_num):
         valor = str(int(valor_num))
