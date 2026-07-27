@@ -1,15 +1,16 @@
 {
-  "name": "vortex-gramjs-deposito",
+  "name": "telegram-bot-api",
   "version": "1.0.0",
-  "private": true,
-  "main": "deposito.js",
+  "description": "",
+  "main": "index.js",
   "scripts": {
-    "start": "node deposito.js"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
   "dependencies": {
-    "cors": "^2.8.6",
-    "dotenv": "^17.4.2",
-    "express": "^4.22.2",
-    "telegram": "^2.26.22"
+    "tdweb": "^1.8.0"
   }
 }
