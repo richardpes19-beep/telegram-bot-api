@@ -172,7 +172,12 @@ async def cors_middleware(request, handler):
     if request.method == "OPTIONS":
         resposta = web.Response()
     else:
-        resposta = await handler(request)
+        try:
+            resposta = await handler(request)
+        except web.HTTPException as exc:
+            # Exceções HTTP do aiohttp (404, 405, etc) já são respostas válidas,
+            # só precisam passar pelos headers de CORS também.
+            resposta = exc
 
     resposta.headers["Access-Control-Allow-Origin"] = "*"
     resposta.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
@@ -196,11 +201,17 @@ async def ao_encerrar(app):
     await client.disconnect()
 
 
+async def rota_options(request):
+    return web.Response()
+
+
 def criar_app():
     app = web.Application(middlewares=[cors_middleware])
 
     app.router.add_post("/deposito", rota_deposito)
     app.router.add_get("/ultimo-pix", rota_ultimo_pix)
+    app.router.add_route("OPTIONS", "/deposito", rota_options)
+    app.router.add_route("OPTIONS", "/ultimo-pix", rota_options)
 
     app.on_startup.append(ao_iniciar)
     app.on_cleanup.append(ao_encerrar)
