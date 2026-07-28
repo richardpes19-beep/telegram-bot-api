@@ -1,4 +1,3 @@
-fastapi
-uvicorn[standard]
+flask
 telethon
 python-dotenv
