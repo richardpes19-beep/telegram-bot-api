@@ -14,10 +14,15 @@ load_dotenv()
 api_id = int(os.getenv("API_ID"))
 api_hash = os.getenv("API_HASH")
 
+# Cria e fixa o loop ANTES do client, e passa ele explicitamente
+loop = asyncio.new_event_loop()
+asyncio.set_event_loop(loop)
+
 client = TelegramClient(
     "sessao_telegram",
     api_id,
-    api_hash
+    api_hash,
+    loop=loop
 )
 
 app = Flask(__name__)
@@ -25,10 +30,8 @@ app = Flask(__name__)
 # Valor fixo enviado ao VortexBank_bot
 valor_num = 1000
 
-# Loop asyncio único, reaproveitado em cada request
-loop = asyncio.new_event_loop()
-asyncio.set_event_loop(loop)
-loop.run_until_complete(client.start())
+# client.start() já gerencia o loop sozinho, não precisa de run_until_complete
+client.start()
 print("Conectado ao Telegram")
 
 
