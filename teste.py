@@ -183,4 +183,5 @@ if __name__ == "__main__":
     thread = threading.Thread(target=loop_24h, daemon=True)
     thread.start()
 
-    app.run(host="0.0.0.0", port=8000)
+    porta = int(os.environ.get("PORT", 8000))
+    app.run(host="0.0.0.0", port=porta)
