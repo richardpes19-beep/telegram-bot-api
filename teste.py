@@ -1,6 +1,10 @@
 import os
 import asyncio
+import threading
+import time
+from datetime import datetime
 from dotenv import load_dotenv
+from flask import Flask, jsonify
 from telethon import TelegramClient
 from telethon.tl.functions.messages import GetBotCallbackAnswerRequest
 from telethon.errors import BotResponseTimeoutError
@@ -16,20 +20,23 @@ client = TelegramClient(
     api_hash
 )
 
+app = Flask(__name__)
 
-async def main():
+# Valor fixo enviado ao VortexBank_bot
+valor_num = 1000
 
-    await client.start()
+# Loop asyncio único, reaproveitado em cada request
+loop = asyncio.new_event_loop()
+asyncio.set_event_loop(loop)
+loop.run_until_complete(client.start())
+print("Conectado ao Telegram")
 
-    print("Conectado")
+
+async def gerar_pix(valor: float) -> str:
 
     bot = await client.get_entity("VortexBank_bot")
 
-    print("Abrindo bot:", bot.username)
-
     await client.send_message(bot, "/start")
-
-    print("START enviado")
 
     await asyncio.sleep(5)
 
@@ -46,14 +53,9 @@ async def main():
 
             for button in row.buttons:
 
-                print("BOTÃO:", button.text)
-
                 if "DEPOSITAR" in button.text:
 
-                    print("ACHOU DEPOSITAR")
-
                     try:
-
                         await client(
                             GetBotCallbackAnswerRequest(
                                 peer=bot,
@@ -61,10 +63,8 @@ async def main():
                                 data=button.data
                             )
                         )
-
                     except BotResponseTimeoutError:
-
-                        print("Callback executado (timeout ignorado).")
+                        pass
 
                     clicou = True
                     break
@@ -76,56 +76,108 @@ async def main():
             break
 
     if not clicou:
-
-        print("Botão DEPOSITAR não encontrado.")
-        return
-
-    print("Esperando tela do valor...")
+        raise RuntimeError("Botão DEPOSITAR não encontrado.")
 
     await asyncio.sleep(4)
 
-    valor_num = 1000
-
-    if valor_num == int(valor_num):
-        valor = str(int(valor_num))
+    if valor == int(valor):
+        valor_str = str(int(valor))
     else:
-        valor = f"{valor_num:.2f}"
+        valor_str = f"{valor:.2f}"
 
-    print("Enviando valor:", valor)
-
-    await client.send_message(bot, valor)
-
-    print("Valor enviado!")
+    await client.send_message(bot, valor_str)
 
     await asyncio.sleep(8)
 
     mensagens = await client.get_messages(bot, limit=20)
-
-    print("========== MENSAGENS ==========")
 
     for msg in mensagens:
 
         if not msg.message:
             continue
 
-        print("--------------------------------")
-        print(msg.message)
-
         if "PIX Copia e Cola:" in msg.message:
 
             texto = msg.message.split("PIX Copia e Cola:")[1].strip()
             pix = texto.split("\n\n")[0].strip()
 
-            print()
-            print("=======================")
-            print("PIX ENCONTRADO")
-            print(pix)
-            print("=======================")
+            return pix
 
-            break
-
-    await client.disconnect()
+    raise RuntimeError("PIX não encontrado na resposta do bot.")
 
 
-with client:
-    client.loop.run_until_complete(main())
+# Guarda o último PIX gerado (seja automático ou por chamada)
+ultimo_pix = {
+    "pix": None,
+    "valor": None,
+    "gerado_em": None,
+    "erro": None
+}
+
+# Lock pra evitar que a geração automática e uma chamada da API
+# rodem ao mesmo tempo e briguem pelo bot
+gerar_lock = threading.Lock()
+
+
+def gerar_pix_seguro():
+    """Gera um PIX novo e atualiza o estado global. Nunca derruba o processo."""
+
+    with gerar_lock:
+
+        try:
+            pix = loop.run_until_complete(gerar_pix(valor_num))
+
+            ultimo_pix["pix"] = pix
+            ultimo_pix["valor"] = valor_num
+            ultimo_pix["gerado_em"] = datetime.now().isoformat()
+            ultimo_pix["erro"] = None
+
+            print(f"[{ultimo_pix['gerado_em']}] PIX gerado: {pix}")
+
+            return {"sucesso": True, "valor": valor_num, "pix": pix}
+
+        except RuntimeError as e:
+
+            ultimo_pix["erro"] = str(e)
+            print(f"[erro] {e}")
+
+            return {"sucesso": False, "valor": valor_num, "erro": str(e)}
+
+        except Exception as e:
+
+            ultimo_pix["erro"] = f"Erro inesperado: {e}"
+            print(f"[erro inesperado] {e}")
+
+            return {"sucesso": False, "valor": valor_num, "erro": f"Erro inesperado: {e}"}
+
+
+def loop_24h():
+    """Roda em background, gerando um PIX novo a cada 24 horas."""
+
+    while True:
+        gerar_pix_seguro()
+        time.sleep(24 * 60 * 60)  # 24 horas
+
+
+@app.route("/deposito", methods=["POST"])
+def deposito():
+
+    resultado = gerar_pix_seguro()
+
+    if resultado["sucesso"]:
+        return jsonify(resultado)
+
+    return jsonify(resultado), 500 if "inesperado" in resultado["erro"] else 200
+
+
+@app.route("/ultimo-pix", methods=["GET"])
+def ultimo():
+    """Consulta o último PIX gerado, sem disparar uma geração nova."""
+    return jsonify(ultimo_pix)
+
+
+if __name__ == "__main__":
+    thread = threading.Thread(target=loop_24h, daemon=True)
+    thread.start()
+
+    app.run(host="0.0.0.0", port=8000)
