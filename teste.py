@@ -179,9 +179,9 @@ def ultimo():
     return jsonify(ultimo_pix)
 
 
-if __name__ == "__main__":
-    thread = threading.Thread(target=loop_24h, daemon=True)
-    thread.start()
+threading.Thread(target=loop_24h, daemon=True).start()
 
+
+if __name__ == "__main__":
     porta = int(os.environ.get("PORT", 8000))
     app.run(host="0.0.0.0", port=porta)
