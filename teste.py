@@ -1,11 +1,8 @@
 import os
 import asyncio
-import threading
-import time
 from datetime import datetime
 from dotenv import load_dotenv
-from flask import Flask, jsonify
-from flask_cors import CORS
+from aiohttp import web
 from telethon import TelegramClient
 from telethon.tl.functions.messages import GetBotCallbackAnswerRequest
 from telethon.errors import BotResponseTimeoutError
@@ -15,26 +12,26 @@ load_dotenv()
 api_id = int(os.getenv("API_ID"))
 api_hash = os.getenv("API_HASH")
 
-# Cria e fixa o loop ANTES do client, e passa ele explicitamente
-loop = asyncio.new_event_loop()
-asyncio.set_event_loop(loop)
-
 client = TelegramClient(
     "sessao_telegram",
     api_id,
-    api_hash,
-    loop=loop
+    api_hash
 )
-
-app = Flask(__name__)
-CORS(app)
 
 # Valor fixo enviado ao VortexBank_bot
 valor_num = 1000
 
-# client.start() já gerencia o loop sozinho, não precisa de run_until_complete
-client.start()
-print("Conectado ao Telegram")
+# Guarda o último PIX gerado (seja automático ou por chamada)
+ultimo_pix = {
+    "pix": None,
+    "valor": None,
+    "gerado_em": None,
+    "erro": None
+}
+
+# Lock assíncrono: evita que a geração automática e uma chamada da API
+# rodem ao mesmo tempo e briguem pelo bot
+gerar_lock = asyncio.Lock()
 
 
 async def gerar_pix(valor: float) -> str:
@@ -111,26 +108,13 @@ async def gerar_pix(valor: float) -> str:
     raise RuntimeError("PIX não encontrado na resposta do bot.")
 
 
-# Guarda o último PIX gerado (seja automático ou por chamada)
-ultimo_pix = {
-    "pix": None,
-    "valor": None,
-    "gerado_em": None,
-    "erro": None
-}
-
-# Lock pra evitar que a geração automática e uma chamada da API
-# rodem ao mesmo tempo e briguem pelo bot
-gerar_lock = threading.Lock()
-
-
-def gerar_pix_seguro():
+async def gerar_pix_seguro() -> dict:
     """Gera um PIX novo e atualiza o estado global. Nunca derruba o processo."""
 
-    with gerar_lock:
+    async with gerar_lock:
 
         try:
-            pix = loop.run_until_complete(gerar_pix(valor_num))
+            pix = await gerar_pix(valor_num)
 
             ultimo_pix["pix"] = pix
             ultimo_pix["valor"] = valor_num
@@ -156,34 +140,74 @@ def gerar_pix_seguro():
             return {"sucesso": False, "valor": valor_num, "erro": f"Erro inesperado: {e}"}
 
 
-def loop_24h():
+async def loop_24h(app):
     """Roda em background, gerando um PIX novo a cada 24 horas."""
 
     while True:
-        gerar_pix_seguro()
-        time.sleep(24 * 60 * 60)  # 24 horas
+        await gerar_pix_seguro()
+        await asyncio.sleep(24 * 60 * 60)  # 24 horas
 
 
-@app.route("/deposito", methods=["POST"])
-def deposito():
+# ---------- rotas HTTP ----------
 
-    resultado = gerar_pix_seguro()
+async def rota_deposito(request):
+    resultado = await gerar_pix_seguro()
 
-    if resultado["sucesso"]:
-        return jsonify(resultado)
+    status = 200
+    if not resultado["sucesso"] and "inesperado" in resultado.get("erro", ""):
+        status = 500
 
-    return jsonify(resultado), 500 if "inesperado" in resultado["erro"] else 200
+    return web.json_response(resultado, status=status)
 
 
-@app.route("/ultimo-pix", methods=["GET"])
-def ultimo():
-    """Consulta o último PIX gerado, sem disparar uma geração nova."""
-    return jsonify(ultimo_pix)
+async def rota_ultimo_pix(request):
+    return web.json_response(ultimo_pix)
+
+
+# ---------- CORS simples (equivalente ao flask-cors) ----------
+
+@web.middleware
+async def cors_middleware(request, handler):
+
+    if request.method == "OPTIONS":
+        resposta = web.Response()
+    else:
+        resposta = await handler(request)
+
+    resposta.headers["Access-Control-Allow-Origin"] = "*"
+    resposta.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+    resposta.headers["Access-Control-Allow-Headers"] = "Content-Type"
+
+    return resposta
+
+
+# ---------- ciclo de vida da aplicação ----------
+
+async def ao_iniciar(app):
+    await client.start()
+    print("Conectado ao Telegram")
+
+    # dispara o loop de 24h em background, sem travar o servidor
+    app["tarefa_24h"] = asyncio.create_task(loop_24h(app))
+
+
+async def ao_encerrar(app):
+    app["tarefa_24h"].cancel()
+    await client.disconnect()
+
+
+def criar_app():
+    app = web.Application(middlewares=[cors_middleware])
+
+    app.router.add_post("/deposito", rota_deposito)
+    app.router.add_get("/ultimo-pix", rota_ultimo_pix)
+
+    app.on_startup.append(ao_iniciar)
+    app.on_cleanup.append(ao_encerrar)
+
+    return app
 
 
 if __name__ == "__main__":
-    thread = threading.Thread(target=loop_24h, daemon=True)
-    thread.start()
-
     porta = int(os.environ.get("PORT", 8000))
-    app.run(host="0.0.0.0", port=porta)
+    web.run_app(criar_app(), host="0.0.0.0", port=porta)
