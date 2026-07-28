@@ -5,6 +5,7 @@ import time
 from datetime import datetime
 from dotenv import load_dotenv
 from flask import Flask, jsonify
+from flask_cors import CORS
 from telethon import TelegramClient
 from telethon.tl.functions.messages import GetBotCallbackAnswerRequest
 from telethon.errors import BotResponseTimeoutError
@@ -26,6 +27,7 @@ client = TelegramClient(
 )
 
 app = Flask(__name__)
+CORS(app)
 
 # Valor fixo enviado ao VortexBank_bot
 valor_num = 1000
@@ -179,9 +181,9 @@ def ultimo():
     return jsonify(ultimo_pix)
 
 
-threading.Thread(target=loop_24h, daemon=True).start()
-
-
 if __name__ == "__main__":
+    thread = threading.Thread(target=loop_24h, daemon=True)
+    thread.start()
+
     porta = int(os.environ.get("PORT", 8000))
     app.run(host="0.0.0.0", port=porta)
