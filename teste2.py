@@ -36,10 +36,6 @@ gerar_lock = asyncio.Lock()
 
 async def gerar_pix(valor: float) -> str:
 
-    # connect() é seguro chamar mesmo se já conectado (não faz nada nesse caso).
-    # is_connected() pode dizer "True" numa conexão zumbi que na prática não responde mais.
-    await client.connect()
-
     bot = await client.get_entity("VortexBank_bot")
 
     await client.send_message(bot, "/start")
@@ -118,7 +114,7 @@ async def gerar_pix_seguro() -> dict:
     async with gerar_lock:
 
         try:
-            pix = await asyncio.wait_for(gerar_pix(valor_num), timeout=60)
+            pix = await gerar_pix(valor_num)
 
             ultimo_pix["pix"] = pix
             ultimo_pix["valor"] = valor_num
@@ -128,22 +124,6 @@ async def gerar_pix_seguro() -> dict:
             print(f"[{ultimo_pix['gerado_em']}] PIX gerado: {pix}")
 
             return {"sucesso": True, "valor": valor_num, "pix": pix}
-
-        except asyncio.TimeoutError:
-
-            erro = "Timeout: o bot do Telegram demorou demais pra responder (>60s)."
-            ultimo_pix["erro"] = erro
-            print(f"[erro] {erro}")
-
-            # a conexão pode ter ficado "zumbi" (parece viva mas não responde).
-            # força desconectar aqui pra próxima chamada reconectar do zero.
-            try:
-                await client.disconnect()
-                print("[info] Conexão reiniciada após timeout.")
-            except Exception as e2:
-                print(f"[aviso] Falha ao reiniciar conexão: {e2}")
-
-            return {"sucesso": False, "valor": valor_num, "erro": erro}
 
         except RuntimeError as e:
 
@@ -168,22 +148,9 @@ async def loop_24h(app):
         await asyncio.sleep(24 * 60 * 60)  # 24 horas
 
 
-async def heartbeat(app):
-    """Imprime um sinal de vida a cada 30s. Se isso parar de aparecer no log,
-    o processo inteiro travou (não é só a chamada do Telegram)."""
-
-    contador = 0
-    while True:
-        contador += 1
-        print(f"[heartbeat] processo vivo #{contador} - {datetime.now().isoformat()}")
-        await asyncio.sleep(30)
-
-
 # ---------- rotas HTTP ----------
 
 async def rota_deposito(request):
-    print(f"[requisição] /deposito recebido às {datetime.now().isoformat()}")
-
     resultado = await gerar_pix_seguro()
 
     status = 200
@@ -195,19 +162,6 @@ async def rota_deposito(request):
 
 async def rota_ultimo_pix(request):
     return web.json_response(ultimo_pix)
-
-
-async def rota_raiz(request):
-    return web.Response(text="API ONLINE")
-
-
-async def rota_status(request):
-    conectado = client.is_connected() if client else False
-    return web.json_response({
-        "status": "online",
-        "telegram_conectado": conectado,
-        "hora": datetime.now().isoformat()
-    })
 
 
 # ---------- CORS simples (equivalente ao flask-cors) ----------
@@ -240,12 +194,10 @@ async def ao_iniciar(app):
 
     # dispara o loop de 24h em background, sem travar o servidor
     app["tarefa_24h"] = asyncio.create_task(loop_24h(app))
-    app["tarefa_heartbeat"] = asyncio.create_task(heartbeat(app))
 
 
 async def ao_encerrar(app):
     app["tarefa_24h"].cancel()
-    app["tarefa_heartbeat"].cancel()
     await client.disconnect()
 
 
@@ -258,8 +210,6 @@ def criar_app():
 
     app.router.add_post("/deposito", rota_deposito)
     app.router.add_get("/ultimo-pix", rota_ultimo_pix)
-    app.router.add_get("/", rota_raiz)
-    app.router.add_get("/status", rota_status)
     app.router.add_route("OPTIONS", "/deposito", rota_options)
     app.router.add_route("OPTIONS", "/ultimo-pix", rota_options)
 
