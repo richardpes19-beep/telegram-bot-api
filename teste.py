@@ -36,22 +36,29 @@ gerar_lock = asyncio.Lock()
 
 async def gerar_pix(valor: float) -> str:
 
-    # reset total da conexão a cada chamada — garante que nunca reaproveita
-    # uma conexão "zumbi" que ficou de uma tentativa anterior.
-    try:
-        await client.disconnect()
-    except Exception:
-        pass
+    print(f"[debug] is_connected() antes: {client.is_connected()}")
 
-    await client.connect()
+    if not client.is_connected():
+        print("[debug] não conectado, chamando client.connect()...")
+        await client.connect()
+        print(f"[debug] is_connected() depois do connect(): {client.is_connected()}")
 
+    print("[debug] buscando entidade do bot (get_entity)...")
     bot = await client.get_entity("VortexBank_bot")
+    print(f"[debug] entidade obtida: id={bot.id}, username={getattr(bot, 'username', None)}")
 
-    await client.send_message(bot, "/start")
+    print("[debug] enviando /start...")
+    msg_start = await client.send_message(bot, "/start")
+    print(f"[debug] /start enviado, msg.id={msg_start.id}, date={msg_start.date}")
 
     await asyncio.sleep(5)
 
+    print("[debug] lendo mensagens após /start...")
     mensagens = await client.get_messages(bot, limit=10)
+    print(f"[debug] {len(mensagens)} mensagens lidas. IDs: {[m.id for m in mensagens]}")
+    for m in mensagens[:5]:
+        preview = (m.message or "")[:60].replace("\n", " ")
+        print(f"[debug]   msg id={m.id} out={m.out} tem_botoes={bool(m.reply_markup)} texto='{preview}'")
 
     clicou = False
 
@@ -66,16 +73,19 @@ async def gerar_pix(valor: float) -> str:
 
                 if "DEPOSITAR" in button.text:
 
+                    print(f"[debug] botão DEPOSITAR encontrado na msg id={msg.id}, clicando...")
+
                     try:
-                        await client(
+                        resposta_click = await client(
                             GetBotCallbackAnswerRequest(
                                 peer=bot,
                                 msg_id=msg.id,
                                 data=button.data
                             )
                         )
+                        print(f"[debug] callback respondido: {resposta_click}")
                     except BotResponseTimeoutError:
-                        pass
+                        print("[debug] BotResponseTimeoutError ao clicar (ignorado, seguindo fluxo)")
 
                     clicou = True
                     break
@@ -87,6 +97,7 @@ async def gerar_pix(valor: float) -> str:
             break
 
     if not clicou:
+        print("[debug] botão DEPOSITAR NÃO encontrado em nenhuma mensagem")
         raise RuntimeError("Botão DEPOSITAR não encontrado.")
 
     await asyncio.sleep(4)
@@ -96,11 +107,15 @@ async def gerar_pix(valor: float) -> str:
     else:
         valor_str = f"{valor:.2f}"
 
-    await client.send_message(bot, valor_str)
+    print(f"[debug] enviando valor '{valor_str}'...")
+    msg_valor = await client.send_message(bot, valor_str)
+    print(f"[debug] valor enviado, msg.id={msg_valor.id}")
 
     await asyncio.sleep(8)
 
+    print("[debug] lendo mensagens após enviar valor...")
     mensagens = await client.get_messages(bot, limit=20)
+    print(f"[debug] {len(mensagens)} mensagens lidas. IDs: {[m.id for m in mensagens]}")
 
     for msg in mensagens:
 
@@ -112,8 +127,11 @@ async def gerar_pix(valor: float) -> str:
             texto = msg.message.split("PIX Copia e Cola:")[1].strip()
             pix = texto.split("\n\n")[0].strip()
 
+            print(f"[debug] PIX encontrado na msg id={msg.id}")
+
             return pix
 
+    print("[debug] PIX NÃO encontrado em nenhuma mensagem lida")
     raise RuntimeError("PIX não encontrado na resposta do bot.")
 
 
