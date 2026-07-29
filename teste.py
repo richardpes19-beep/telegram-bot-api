@@ -36,8 +36,13 @@ gerar_lock = asyncio.Lock()
 
 async def gerar_pix(valor: float) -> str:
 
-    # connect() é seguro chamar mesmo se já conectado (não faz nada nesse caso).
-    # is_connected() pode dizer "True" numa conexão zumbi que na prática não responde mais.
+    # reset total da conexão a cada chamada — garante que nunca reaproveita
+    # uma conexão "zumbi" que ficou de uma tentativa anterior.
+    try:
+        await client.disconnect()
+    except Exception:
+        pass
+
     await client.connect()
 
     bot = await client.get_entity("VortexBank_bot")
@@ -184,13 +189,22 @@ async def heartbeat(app):
 async def rota_deposito(request):
     print(f"[requisição] /deposito recebido às {datetime.now().isoformat()}")
 
-    resultado = await gerar_pix_seguro()
+    if gerar_lock.locked():
+        return web.json_response(
+            {"sucesso": False, "status": "ja_processando",
+             "mensagem": "Já tem uma geração de PIX em andamento, aguarde e consulte /ultimo-pix."},
+            status=202
+        )
 
-    status = 200
-    if not resultado["sucesso"] and "inesperado" in resultado.get("erro", ""):
-        status = 500
+    # dispara em segundo plano e responde NA HORA — nunca deixa o Railway
+    # estourar o tempo limite esperando o Telegram responder.
+    asyncio.create_task(gerar_pix_seguro())
 
-    return web.json_response(resultado, status=status)
+    return web.json_response(
+        {"sucesso": True, "status": "processando",
+         "mensagem": "PIX sendo gerado, consulte /ultimo-pix em alguns segundos."},
+        status=202
+    )
 
 
 async def rota_ultimo_pix(request):
